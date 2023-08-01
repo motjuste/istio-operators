@@ -26,7 +26,7 @@ beautifulsoup4==4.12.2
     # via -r ./requirements-integration.in
 cachetools==5.3.1
     # via google-auth
-certifi==2023.5.7
+certifi==2023.7.22
     # via
     #   httpcore
     #   httpx
@@ -40,7 +40,7 @@ charset-normalizer==3.2.0
     # via
     #   aiohttp
     #   requests
-cryptography==41.0.2
+cryptography==41.0.3
     # via paramiko
 decorator==5.1.1
     # via
@@ -76,7 +76,7 @@ ipdb==0.13.13
     # via pytest-operator
 ipython==8.12.2
     # via ipdb
-jedi==0.18.2
+jedi==0.19.0
     # via ipython
 jinja2==3.1.2
     # via pytest-operator
