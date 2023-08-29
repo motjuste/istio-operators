@@ -3,6 +3,7 @@
 import logging
 import subprocess
 import yaml
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -60,6 +61,7 @@ CONTROL_PLANE_TEMPLATED_RESOURCES="src/manifests/istio-control-plane/istio_contr
 DEFAULT_IMAGES = {}
 IMAGE_CONFIGURATION = "image_configuration"
 KRH_GATEWAY_SCOPE = "gateway"
+METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 METRICS_PORT = 15014
 INGRESS_AUTH_RELATION_NAME = "ingress-auth"
 INGRESS_AUTH_TEMPLATE_FILES = ["src/manifests/auth_filter.yaml.j2"]
@@ -164,22 +166,24 @@ class Operator(CharmBase):
 
     def _path_rendered_external_manifests(self) -> str:
         """Renders and save a manifest file to be used during installation of the control plane."""
-        path_to_rendered_external_manifest = "src/manifests/istio-control-plane/istio_control_plane_rendered_external_manifests.yaml"
+        storage = self.model.storages["tmp"][0]
+        root_dir = storage.location
         image_configuration = yaml.safe_load(self.model.config[IMAGE_CONFIGURATION])
         template = Template(Path(CONTROL_PLANE_TEMPLATED_RESOURCES).read_text())
         rendered_template = template.render(**image_configuration)
-        with open(path_to_rendered_external_manifest, "w") as f:
+        filename = os.path.join(root_dir, "istio_control_plane_rendered_external_manifests.yaml")
+        with open(filename, "w") as f:
             f.write(rendered_template)
+            f.close()
 
-        return path_to_rendered_external_manifest
+        return root_dir
 
     def install(self, _):
         """Install charm."""
         self._log_and_set_status(MaintenanceStatus("Deploying Istio control plane"))
 
         # Render and save external manifests
-        external_manifests = self._path_rendered_external_manifests()
-
+        control_plane_external_manifests_path = self._path_rendered_external_manifests()
         # Call istioctl install with external manifests to allow
         # configuring container images.
         # The manifest sets the namespace to kubeflow and the profile
@@ -190,7 +194,7 @@ class Operator(CharmBase):
                 "./istioctl",
                 "install",
                 "-y",
-                f"--manifests={control_plane_external_manifests_path}",
+                f"--manifests={METADATA['storage']['tmp']['location']}",
             ]
         )
 

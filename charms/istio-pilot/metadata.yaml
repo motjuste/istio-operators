@@ -4,6 +4,12 @@ summary: |
   Istio Service Mesh.
 description: |
   https://istio.io/latest/docs/reference/commands/pilot-discovery/
+storage:
+  tmp:
+    type: filesystem
+    description: Temporary storage
+    minimum-size: 5M
+    location: /tmp-manifests
 provides:
   metrics-endpoint:
     interface: prometheus_scrape

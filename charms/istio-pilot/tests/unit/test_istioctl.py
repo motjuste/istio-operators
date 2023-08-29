@@ -69,6 +69,7 @@ def test_istioctl_install(mocked_check_call):
         f"profile={PROFILE}",
         "-s",
         f"values.global.istioNamespace={NAMESPACE}",
+        #"--manifests=./tmp-manifests/",
     ]
 
     mocked_check_call.assert_called_once_with(expected_call_args)
