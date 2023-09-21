@@ -22,5 +22,6 @@ requires:
           - service-port
     versions: [v1]
     __schema_source: https://raw.githubusercontent.com/canonical/operator-schemas/master/k8s-service.yaml
-assumes:
-- juju >= 2.9.0
+  ingress-per-unit:
+    interface: ingress_per_unit
+    limit: 1

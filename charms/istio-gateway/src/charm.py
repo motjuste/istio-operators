@@ -10,8 +10,19 @@ from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, StatusBase, WaitingStatus
 from serialized_data_interface import NoCompatibleVersions, NoVersionsListed, get_interfaces
 
-SUPPORTED_GATEWAY_SERVICE_TYPES = ["LoadBalancer", "ClusterIP", "NodePort"]
+from charms.traefik_k8s.v1.ingress_per_unit import (
+    IngressPerUnitReadyForUnitEvent,
+    IngressPerUnitRequirer,
+    IngressPerUnitRevokedForUnitEvent,
+)
 
+SUPPORTED_GATEWAY_SERVICE_TYPES = ["LoadBalancer", "ClusterIP", "NodePort"]
+# Paths for the private key and the signed server certificate.
+# These are used to present to clients and to authenticate other servers.
+INGRESS_GATEWAY_DIR="/etc/gateway/"
+KEY_PATH = f"{INGRESS_GATEWAY_DIR}/server.key"
+CERT_PATH = f"{INGRESS_GATEWAY_DIR}/server.cert"
+CA_CERT_PATH = f"{INGRESS_GATEWAY_DIR}/ca.cert"
 
 class Operator(CharmBase):
     def __init__(self, *args):
@@ -21,6 +32,19 @@ class Operator(CharmBase):
 
         # Every lightkube API call will use the model name as the namespace by default
         self.lightkube_client = Client(namespace=self.model.name, field_manager="lightkube")
+
+        # Check if this port is useful
+        self._port = 9090
+
+        # Use a config option for now for picking between secure and insecure
+        self.ingress = IngressPerUnitRequirer(
+            self,
+            relation_name="ingress-per-unit",
+            port=self._port,
+            strip_prefix=True,
+            redirect_https=True,
+            scheme=lambda: "https" if self.model.config["secure"] else "http",
+        )
 
         for event in [
             self.on.start,

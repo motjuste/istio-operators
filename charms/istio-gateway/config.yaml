@@ -1,4 +1,8 @@
 options:
+  secure:
+    default: true
+    description: Enable secure connection, defaults to True
+    type: boolean
   kind:
     default: ''
     description: Kind of Istio gateway. Must be set to one of `ingress`, `egress`
