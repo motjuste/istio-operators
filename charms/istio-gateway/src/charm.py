@@ -9,6 +9,7 @@ from ops.charm import CharmBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, StatusBase, WaitingStatus
 from serialized_data_interface import NoCompatibleVersions, NoVersionsListed, get_interfaces
+from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 
 SUPPORTED_GATEWAY_SERVICE_TYPES = ["LoadBalancer", "ClusterIP", "NodePort"]
 
@@ -22,13 +23,32 @@ class Operator(CharmBase):
         # Every lightkube API call will use the model name as the namespace by default
         self.lightkube_client = Client(namespace=self.model.name, field_manager="lightkube")
 
+
+        self.ingress = IngressPerAppRequirer(
+            self,
+            port=8080,
+            strip_prefix=True,
+            redirect_https=True,
+            prefix='/',
+            host=f"{self.app.name}-workload.{self.model.name}.svc.cluster.local",
+        )
+
         for event in [
             self.on.start,
             self.on["istio-pilot"].relation_changed,
             self.on.config_changed,
         ]:
             self.framework.observe(event, self.start)
+        self.framework.observe(self.ingress.on.ready, self._handle_ingress)  # pyright: ignore
+        self.framework.observe(self.ingress.on.revoked, self._handle_ingress)  # pyright: ignore
         self.framework.observe(self.on.remove, self.remove)
+
+    def _handle_ingress(self, _):
+        if url := self.ingress.url:
+            self.log.info("Ingress is ready: '%s'.", url)
+        else:
+            self.log.info("Ingress revoked.")
+        self._common_exit_hook()
 
     def start(self, event):
         """Event handler for StartEevnt."""
